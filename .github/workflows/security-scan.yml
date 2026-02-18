@@ -1,0 +1,251 @@
+name: 🔒 Security Scan
+
+# S'exécute quotidiennement à 2h du matin
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Tous les jours à 2h UTC
+  workflow_dispatch:  # Permet de lancer manuellement
+  push:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    name: 🔍 Analyse de Sécurité
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout du code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Configuration Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: 📦 Installation des dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install safety bandit
+      
+      # ==================== SCAN DES DÉPENDANCES ====================
+      - name: 🔍 Scan des vulnérabilités (Safety)
+        id: safety_check
+        continue-on-error: true
+        run: |
+          echo "🔍 Vérification des vulnérabilités dans les dépendances..."
+          safety check --json > safety-report.json || true
+          
+          # Afficher le rapport
+          if [ -f safety-report.json ]; then
+            echo "📊 Rapport Safety:"
+            cat safety-report.json | python3 -m json.tool || cat safety-report.json
+          fi
+      
+      - name: 📊 Analyser le rapport Safety
+        if: always()
+        run: |
+          if [ -f safety-report.json ]; then
+            python3 << 'EOF'
+          import json
+          
+          try:
+              with open('safety-report.json', 'r') as f:
+                  data = json.load(f)
+              
+              if isinstance(data, list) and len(data) > 0:
+                  print(f"⚠️ {len(data)} vulnérabilité(s) détectée(s)!")
+                  for vuln in data[:5]:  # Afficher max 5
+                      print(f"\n📦 Package: {vuln.get('package', 'Unknown')}")
+                      print(f"🔢 Version: {vuln.get('installed_version', 'Unknown')}")
+                      print(f"⚠️ Severity: {vuln.get('severity', 'Unknown')}")
+                      print(f"📝 {vuln.get('advisory', 'No description')[:100]}...")
+              else:
+                  print("✅ Aucune vulnérabilité détectée dans les dépendances!")
+          except Exception as e:
+              print(f"ℹ️ Analyse du rapport: {str(e)}")
+          EOF
+          fi
+      
+      # ==================== ANALYSE STATIQUE DU CODE ====================
+      - name: 🔍 Analyse statique du code (Bandit)
+        id: bandit_check
+        continue-on-error: true
+        run: |
+          echo "🔍 Analyse de sécurité du code Python..."
+          bandit -r app/ -f json -o bandit-report.json || true
+          
+          # Afficher le résumé
+          if [ -f bandit-report.json ]; then
+            echo "📊 Rapport Bandit:"
+            cat bandit-report.json | python3 -m json.tool | head -n 50
+          fi
+      
+      - name: 📊 Analyser le rapport Bandit
+        if: always()
+        run: |
+          if [ -f bandit-report.json ]; then
+            python3 << 'EOF'
+          import json
+          
+          try:
+              with open('bandit-report.json', 'r') as f:
+                  data = json.load(f)
+              
+              metrics = data.get('metrics', {})
+              results = data.get('results', [])
+              
+              print("="*50)
+              print("🔒 BANDIT SECURITY REPORT")
+              print("="*50)
+              
+              # Statistiques globales
+              total_loc = sum(m.get('loc', 0) for m in metrics.values())
+              print(f"📝 Lines of code analyzed: {total_loc}")
+              print(f"🔍 Issues found: {len(results)}")
+              
+              # Compter par sévérité
+              severity_counts = {}
+              for result in results:
+                  severity = result.get('issue_severity', 'UNKNOWN')
+                  severity_counts[severity] = severity_counts.get(severity, 0) + 1
+              
+              if severity_counts:
+                  print("\n📊 By Severity:")
+                  for severity, count in sorted(severity_counts.items()):
+                      emoji = "🔴" if severity == "HIGH" else "🟡" if severity == "MEDIUM" else "🔵"
+                      print(f"  {emoji} {severity}: {count}")
+              
+              # Afficher les problèmes les plus graves
+              high_issues = [r for r in results if r.get('issue_severity') == 'HIGH']
+              if high_issues:
+                  print("\n⚠️ HIGH SEVERITY ISSUES:")
+                  for issue in high_issues[:3]:
+                      print(f"\n  📁 File: {issue.get('filename', 'Unknown')}")
+                      print(f"  📍 Line: {issue.get('line_number', '?')}")
+                      print(f"  ⚠️ Issue: {issue.get('issue_text', 'No description')}")
+              else:
+                  print("\n✅ No high severity issues found!")
+              
+              print("="*50)
+          except Exception as e:
+              print(f"ℹ️ Analyse du rapport: {str(e)}")
+          EOF
+          fi
+      
+      # ==================== SCAN DES SECRETS ====================
+      - name: 🔐 Scan des secrets et tokens
+        run: |
+          echo "🔐 Recherche de secrets accidentellement commités..."
+          
+          # Patterns courants de secrets
+          echo "Recherche de patterns suspects..."
+          
+          # API Keys
+          grep -r -n "api[_-]?key.*=.*['\"][a-zA-Z0-9]{20,}['\"]" app/ || echo "✅ Pas d'API keys détectées"
+          
+          # Passwords
+          grep -r -n "password.*=.*['\"][^'\"]{8,}['\"]" app/ || echo "✅ Pas de mots de passe en dur"
+          
+          # AWS Keys
+          grep -r -n "AKIA[0-9A-Z]{16}" app/ || echo "✅ Pas de clés AWS détectées"
+          
+          echo "✅ Scan des secrets terminé"
+      
+      # ==================== GÉNÉRER LE RAPPORT ====================
+      - name: 📊 Générer le rapport de sécurité
+        if: always()
+        run: |
+          echo "================================" > security-summary.txt
+          echo "🔒 SECURITY SCAN SUMMARY" >> security-summary.txt
+          echo "================================" >> security-summary.txt
+          echo "🕒 Timestamp: $(date)" >> security-summary.txt
+          echo "" >> security-summary.txt
+          echo "📊 Results:" >> security-summary.txt
+          echo "  - Safety Check: ${{ steps.safety_check.outcome }}" >> security-summary.txt
+          echo "  - Bandit Check: ${{ steps.bandit_check.outcome }}" >> security-summary.txt
+          echo "================================" >> security-summary.txt
+          
+          cat security-summary.txt
+      
+      - name: 📤 Upload des rapports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            safety-report.json
+            bandit-report.json
+            security-summary.txt
+          retention-days: 30
+      
+      # ==================== ALERTE SI PROBLÈMES CRITIQUES ====================
+      - name: 🚨 Créer un issue si vulnérabilités critiques
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🔒 Security Vulnerabilities Detected';
+            const body = `
+            ## 🔒 Alerte Sécurité
+            
+            **Timestamp:** ${new Date().toISOString()}
+            **Workflow:** ${context.workflow}
+            
+            Des vulnérabilités de sécurité ont été détectées dans le code ou les dépendances.
+            
+            ### Actions recommandées:
+            - [ ] Consulter les rapports de sécurité (artifacts)
+            - [ ] Mettre à jour les dépendances vulnérables
+            - [ ] Corriger les problèmes de code identifiés
+            - [ ] Re-scanner après corrections
+            
+            ### Rapports disponibles:
+            - Safety Report (dépendances)
+            - Bandit Report (code Python)
+            
+            **Détails:** ${context.payload.repository.html_url}/actions/runs/${context.runId}
+            `;
+            
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['security']
+            });
+            
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['security', 'high-priority', 'automated']
+              });
+              console.log('✅ Security issue created');
+            } else {
+              console.log('ℹ️ Security issue already exists');
+            }
+
+  # ==================== RÉSUMÉ ====================
+  summary:
+    name: 📊 Résumé Sécurité
+    runs-on: ubuntu-latest
+    needs: [security-scan]
+    if: always()
+    
+    steps:
+      - name: 📊 Afficher le résumé
+        run: |
+          echo "================================"
+          echo "🔒 SECURITY SCAN COMPLETE"
+          echo "================================"
+          echo "Status: ${{ needs.security-scan.result }}"
+          echo "Timestamp: $(date)"
+          echo "================================"
+          
+          if [ "${{ needs.security-scan.result }}" = "success" ]; then
+            echo "✅ Aucun problème critique détecté"
+          else
+            echo "⚠️ Des problèmes de sécurité nécessitent votre attention"
+          fi

@@ -1,0 +1,132 @@
+name: 🏥 Health Check
+
+# S'exécute toutes les 5 minutes
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Toutes les 5 minutes
+  workflow_dispatch:  # Permet de lancer manuellement
+
+jobs:
+  health-check:
+    name: 🔍 Vérification de Santé
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout du code
+        uses: actions/checkout@v4
+      
+      - name: 🌐 Ping du endpoint /health
+        id: health_check
+        run: |
+          # URL de votre API (à remplacer par votre vraie URL)
+          API_URL="${{ secrets.API_URL || 'http://localhost:5000' }}"
+          
+          echo "🔍 Vérification de $API_URL/health"
+          
+          # Faire la requête avec timeout de 10 secondes
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$API_URL/health" || echo "000")
+          
+          echo "📊 Code HTTP: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ API est UP et fonctionne correctement!"
+            echo "status=UP" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "🚨 API est DOWN! Code: $HTTP_CODE"
+            echo "status=DOWN" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 📊 Vérifier les métriques
+        if: steps.health_check.outputs.status == 'UP'
+        run: |
+          API_URL="${{ secrets.API_URL || 'http://localhost:5000' }}"
+          
+          echo "📊 Récupération des métriques..."
+          METRICS=$(curl -s "$API_URL/metrics" || echo "{}")
+          
+          echo "Métriques:"
+          echo "$METRICS" | python3 -m json.tool || echo "Impossible de parser les métriques"
+      
+      - name: 🚨 Alerte si DOWN
+        if: failure()
+        run: |
+          echo "==============================================="
+          echo "🚨 ALERTE: API DOWN DÉTECTÉE"
+          echo "==============================================="
+          echo "🕒 Timestamp: $(date)"
+          echo "🌐 URL: ${{ secrets.API_URL || 'http://localhost:5000' }}"
+          echo "❌ L'API ne répond pas correctement"
+          echo "==============================================="
+          
+          # Dans un vrai projet, vous enverriez un email ici
+          # Voir le workflow d'envoi d'email séparé
+      
+      - name: 📝 Créer un issue si problème persiste
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 API Health Check Failed';
+            const body = `
+            ## 🚨 Alerte: API DOWN
+            
+            **Timestamp:** ${new Date().toISOString()}
+            **Workflow:** ${context.workflow}
+            **Run ID:** ${context.runId}
+            
+            L'API ne répond pas au health check.
+            
+            ### Actions recommandées:
+            - [ ] Vérifier les logs du serveur
+            - [ ] Vérifier l'état des services
+            - [ ] Redémarrer l'application si nécessaire
+            
+            **Lien vers le workflow:** ${context.payload.repository.html_url}/actions/runs/${context.runId}
+            `;
+            
+            // Vérifier si un issue similaire existe déjà
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['health-check', 'incident']
+            });
+            
+            if (issues.data.length === 0) {
+              // Créer un nouvel issue seulement si aucun n'existe
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['health-check', 'incident', 'automated']
+              });
+              console.log('✅ Issue créé pour signaler le problème');
+            } else {
+              console.log('ℹ️ Un issue existe déjà pour ce problème');
+            }
+
+  # ==================== JOB: RÉSUMÉ ====================
+  summary:
+    name: 📊 Résumé
+    runs-on: ubuntu-latest
+    needs: [health-check]
+    if: always()
+    
+    steps:
+      - name: 📊 Afficher le résumé
+        run: |
+          echo "================================"
+          echo "📊 HEALTH CHECK SUMMARY"
+          echo "================================"
+          echo "Statut: ${{ needs.health-check.result }}"
+          echo "Timestamp: $(date)"
+          echo "================================"
+          
+          if [ "${{ needs.health-check.result }}" = "success" ]; then
+            echo "✅ Tout fonctionne correctement"
+          else
+            echo "❌ Des problèmes ont été détectés"
+          fi
