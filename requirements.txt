@@ -4,3 +4,5 @@ psutil==5.9.6
 pytest==7.4.3
 pytest-cov==4.1.0
 requests==2.31.0
+safety==2.3.5
+bandit==1.7.5
