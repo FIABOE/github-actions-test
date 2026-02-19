@@ -2,8 +2,8 @@ name: ⚡ Performance Testing
 
 # S'exécute toutes les heures
 on:
-     schedule:
-       - cron: '0 * * * *'  # Toutes les heures
+     #schedule:
+      #     - cron: '*/5 * * * *'  # Toutes les heures
      workflow_dispatch:
 
 jobs:
