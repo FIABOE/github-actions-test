@@ -2,8 +2,8 @@ name: 🏥 Health Check
 
 # S'exécute toutes les 5 minutes
 on:
-     schedule:
-       - cron: '0 * * * *'  # Toutes les heures
+     #schedule:
+      # - cron: '0 * * * *'  # Toutes les heures
      workflow_dispatch:
 jobs:
   health-check:
