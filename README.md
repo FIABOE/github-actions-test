@@ -1,8 +1,8 @@
 # 🚀 DevOps Monitoring System with GitHub Actions
 
-[![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Automated-success)](https://github.com)
-[![Health Check](https://img.shields.io/badge/Health-Monitored-brightgreen)](https://github.com)
-[![Security](https://img.shields.io/badge/Security-Scanned-blue)](https://github.com)
+[![CI/CD Pipeline](https://github.com/FIABOE/github-actions-test/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/FIABOE/github-actions-test/blob/main/.github/workflows/ci-cd.yml)
+[![Health Check](https://github.com/FIABOE/github-actions-test/actions/workflows/health-check.yml/badge.svg)](https://github.com/FIABOE/github-actions-test/blob/main/.github/workflows/health-check.yml)
+[![Security Scan](https://github.com/FIABOE/github-actions-test/actions/workflows/security-scan.yml/badge.svg)](https://github.com/FIABOE/github-actions-test/blob/main/.github/workflows/security-scan.yml)
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
@@ -24,10 +24,11 @@ Montrer comment GitHub Actions peut transformer un processus de développement m
    - Build Docker
    - Déploiement sur succès
 
-2. **🏥 Health Check** - Surveillance 24/7
-   - Vérification toutes les 5 minutes
-   - Alerte immédiate si l'API est down
-   - Création automatique d'issues
+2.  **🏥 Health Check** - Surveillance quotidienne 
+   - Vérification automatisée chaque jour à midi.
+   - Ping du endpoint /health pour vérifier la disponibilité
+   - Rapport d'état généré directement dans GitHub Actions.
+   - Possibilité de déclenchement manuel (Workflow Dispatch)
 
 3. **⚡ Performance Testing** - Tests de charge
    - Mesure du temps de réponse
@@ -261,9 +262,10 @@ MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ## 👤 Auteur
 
-Votre Nom - [@votre_twitter](https://twitter.com/votre_twitter)
+**------**
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/data6ai-3b8624235/)
 
-Lien du projet : [https://github.com/YOUR_USERNAME/devops-monitoring-system](https://github.com/YOUR_USERNAME/devops-monitoring-system)
+Lien du projet : [https://github.com/FIABOE/devops-monitoring-system](https://github.com/FIABOE/devops-monitoring-system)
 
 ## 🙏 Remerciements
 
