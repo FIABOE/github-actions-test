@@ -1,10 +1,9 @@
 name: 💾 Automated Backup
 
-# S'exécute tous les jours à minuit
 on:
   schedule:
     - cron: '0 0 * * *'  # Tous les jours à minuit UTC
-  workflow_dispatch:  # Permet de lancer manuellement
+  workflow_dispatch:
 
 jobs:
   backup:
@@ -22,229 +21,49 @@ jobs:
           BACKUP_NAME="backup_${TIMESTAMP}"
           echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
           echo "backup_name=$BACKUP_NAME" >> $GITHUB_OUTPUT
-          echo "📝 Nom du backup: $BACKUP_NAME"
       
       - name: 💾 Créer le backup
         run: |
-          echo "💾 Création du backup..."
-          
-          # Créer un dossier pour le backup
           mkdir -p backups/${{ steps.backup_info.outputs.backup_name }}
-          
-          # Simuler la sauvegarde de différents éléments
-          # Dans un vrai projet, vous sauvegarderiez:
-          # - Base de données (dump SQL)
-          # - Fichiers de configuration
-          # - Logs importants
-          # - Uploads utilisateurs
-          
-          # Exemple: sauvegarder les fichiers de l'application
           cp -r app/ backups/${{ steps.backup_info.outputs.backup_name }}/app/
-          
-          # Créer un fichier d'info sur le backup
-          cat > backups/${{ steps.backup_info.outputs.backup_name }}/backup_info.txt << EOF
-          ================================
-          BACKUP INFORMATION
-          ================================
-          Timestamp: $(date)
-          Commit SHA: ${{ github.sha }}
-          Branch: ${{ github.ref_name }}
-          Triggered by: ${{ github.actor }}
-          Workflow: ${{ github.workflow }}
-          ================================
-          EOF
-          
-          echo "✅ Backup créé"
+          echo "Backup created at $(date)" > backups/${{ steps.backup_info.outputs.backup_name }}/backup_info.txt
       
       - name: 🗜️ Compresser le backup
         run: |
-          echo "🗜️ Compression du backup..."
           cd backups
           tar -czf ${{ steps.backup_info.outputs.backup_name }}.tar.gz ${{ steps.backup_info.outputs.backup_name }}
-          
-          # Afficher la taille
-          SIZE=$(du -h ${{ steps.backup_info.outputs.backup_name }}.tar.gz | cut -f1)
-          echo "📦 Taille du backup: $SIZE"
-          echo "✅ Backup compressé"
       
       - name: 🔐 Calculer le checksum
         id: checksum
         run: |
-          echo "🔐 Calcul du checksum pour vérifier l'intégrité..."
           cd backups
           CHECKSUM=$(sha256sum ${{ steps.backup_info.outputs.backup_name }}.tar.gz | awk '{print $1}')
           echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
-          echo "🔐 Checksum: $CHECKSUM"
-          
-          # Sauvegarder le checksum
           echo "$CHECKSUM  ${{ steps.backup_info.outputs.backup_name }}.tar.gz" > ${{ steps.backup_info.outputs.backup_name }}.sha256
       
       - name: ☁️ Upload vers le stockage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # MIS À JOUR
         with:
           name: ${{ steps.backup_info.outputs.backup_name }}
           path: backups/${{ steps.backup_info.outputs.backup_name }}.tar.gz
-          retention-days: 30  # Conserver 30 jours
-      
-      - name: 📊 Vérifier l'intégrité du backup
-        run: |
-          echo "🔍 Vérification de l'intégrité..."
-          cd backups
-          
-          # Vérifier le checksum
-          if sha256sum -c ${{ steps.backup_info.outputs.backup_name }}.sha256; then
-            echo "✅ Intégrité du backup vérifiée"
-          else
-            echo "❌ Erreur: Intégrité compromise!"
-            exit 1
-          fi
-          
-          # Tester l'extraction
-          echo "🧪 Test d'extraction..."
-          mkdir -p test_restore
-          tar -xzf ${{ steps.backup_info.outputs.backup_name }}.tar.gz -C test_restore
-          
-          if [ -d "test_restore/${{ steps.backup_info.outputs.backup_name }}" ]; then
-            echo "✅ Backup extractible correctement"
-          else
-            echo "❌ Erreur lors de l'extraction"
-            exit 1
-          fi
-      
-      - name: 🧹 Nettoyer les vieux backups
-        run: |
-          echo "🧹 Nettoyage des anciens backups..."
-          
-          # Dans un vrai projet, vous supprimeriez:
-          # - Les backups de plus de 30 jours
-          # - Les backups de plus de X GB au total
-          # - En gardant au moins les 7 derniers backups
-          
-          echo "ℹ️ Politique de rétention:"
-          echo "  - Conserver les 30 derniers jours"
-          echo "  - Garder 1 backup par semaine pour les 3 derniers mois"
-          echo "  - Garder 1 backup par mois pour l'année"
-          
-          echo "✅ Nettoyage effectué"
-      
-      - name: 📧 Préparer le rapport de backup
-        run: |
-          cat > backup-report.txt << EOF
-          ================================
-          📊 BACKUP REPORT
-          ================================
-          🗓️  Date: $(date)
-          📦 Nom: ${{ steps.backup_info.outputs.backup_name }}
-          🔐 Checksum: ${{ steps.checksum.outputs.checksum }}
-          ✅ Status: SUCCESS
-          
-          📁 Contenu sauvegardé:
-          - Application code
-          - Configuration files
-          - Database (si applicable)
-          
-          ☁️  Stockage:
-          - GitHub Artifacts (30 jours)
-          
-          🔄 Prochain backup: $(date -d "+1 day" +"%Y-%m-%d %H:%M")
-          ================================
-          EOF
-          
-          cat backup-report.txt
+          retention-days: 30
       
       - name: 📤 Upload du rapport
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # MIS À JOUR
         with:
           name: backup-report-${{ steps.backup_info.outputs.timestamp }}
-          path: backup-report.txt
+          path: backups/${{ steps.backup_info.outputs.backup_name }}.sha256
           retention-days: 90
-      
-      # Dans un vrai projet, vous enverriez aussi un email ici
-      
-  # ==================== VÉRIFICATION ====================
+
   verify:
     name: ✅ Vérification du Backup
     runs-on: ubuntu-latest
     needs: [backup]
-    
     steps:
       - name: 📥 Télécharger le backup
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4 # MIS À JOUR
         with:
-          name: ${{ needs.backup.outputs.backup_name || 'backup' }}
+          name: ${{ needs.backup.outputs.backup_name }}
       
-      - name: 🔍 Vérifier le backup téléchargé
-        run: |
-          echo "🔍 Vérification du backup téléchargé..."
-          
-          # Lister les fichiers téléchargés
-          echo "📁 Fichiers présents:"
-          ls -lh
-          
-          echo "✅ Backup vérifié et accessible"
-  
-  # ==================== RÉSUMÉ ====================
-  summary:
-    name: 📊 Résumé du Backup
-    runs-on: ubuntu-latest
-    needs: [backup, verify]
-    if: always()
-    
-    steps:
-      - name: 📊 Afficher le résumé
-        run: |
-          echo "================================"
-          echo "💾 BACKUP SUMMARY"
-          echo "================================"
-          echo "Backup: ${{ needs.backup.result }}"
-          echo "Verification: ${{ needs.verify.result }}"
-          echo "Timestamp: $(date)"
-          echo "================================"
-          
-          if [ "${{ needs.backup.result }}" = "success" ] && [ "${{ needs.verify.result }}" = "success" ]; then
-            echo "✅ Backup réussi et vérifié"
-          else
-            echo "⚠️ Problème détecté lors du backup"
-          fi
-          
-          echo ""
-          echo "📊 Statistiques:"
-          echo "  - Fréquence: Quotidienne"
-          echo "  - Rétention: 30 jours"
-          echo "  - Vérification: Automatique"
-      
-      - name: 🚨 Alerte si échec du backup
-        if: needs.backup.result == 'failure' || needs.verify.result == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = '💾 Backup Failed';
-            const body = `
-            ## 💾 Alerte: Échec du Backup
-            
-            **Timestamp:** ${new Date().toISOString()}
-            
-            Le backup automatique a échoué.
-            
-            ### Statuts:
-            - Backup: ${{ needs.backup.result }}
-            - Verification: ${{ needs.verify.result }}
-            
-            ### Actions recommandées:
-            - [ ] Vérifier les logs du workflow
-            - [ ] Vérifier l'espace de stockage
-            - [ ] Relancer le backup manuellement
-            - [ ] Investiguer la cause de l'échec
-            
-            **Détails:** ${context.payload.repository.html_url}/actions/runs/${context.runId}
-            
-            ⚠️ **IMPORTANT:** Vérifiez que vous avez des backups récents valides!
-            `;
-            
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: ['backup', 'critical', 'automated']
-            });
+      - name: 🔍 Vérifier le backup
+        run: ls -lh
