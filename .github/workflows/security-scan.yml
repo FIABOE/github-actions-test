@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: 🐍 Configuration Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
@@ -170,7 +170,7 @@ jobs:
       
       - name: 📤 Upload des rapports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
@@ -227,7 +227,6 @@ jobs:
               console.log('ℹ️ Security issue already exists');
             }
 
-  # ==================== RÉSUMÉ ====================
   summary:
     name: 📊 Résumé Sécurité
     runs-on: ubuntu-latest
