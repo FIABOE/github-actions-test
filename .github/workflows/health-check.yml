@@ -2,10 +2,9 @@ name: 🏥 Health Check
 
 # S'exécute toutes les 5 minutes
 on:
-  schedule:
-    - cron: '*/5 * * * *'  # Toutes les 5 minutes
-  workflow_dispatch:  # Permet de lancer manuellement
-
+     schedule:
+       - cron: '0 * * * *'  # Toutes les heures
+     workflow_dispatch:
 jobs:
   health-check:
     name: 🔍 Vérification de Santé
