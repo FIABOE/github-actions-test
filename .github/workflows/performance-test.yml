@@ -2,9 +2,9 @@ name: ⚡ Performance Testing
 
 # S'exécute toutes les heures
 on:
-  schedule:
-    - cron: '0 * * * *'  # Toutes les heures
-  workflow_dispatch:  # Permet de lancer manuellement
+     schedule:
+       - cron: '0 * * * *'  # Toutes les heures
+     workflow_dispatch:
 
 jobs:
   performance-test:
