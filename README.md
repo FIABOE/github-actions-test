@@ -77,7 +77,7 @@ Montrer comment GitHub Actions peut transformer un processus de développement m
 
 1. **Cloner le projet**
 ```bash
-git clone https://github.com/YOUR_USERNAME/devops-monitoring-system.git
+git clone https://github.com/FIABOE/github-actions-test
 cd devops-monitoring-system
 ```
 
