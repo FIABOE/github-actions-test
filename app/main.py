@@ -75,7 +75,7 @@ def home():
     """Page d'accueil"""
     return jsonify({
         'status': 'success',
-        'message': 'Bienvenue sur l\'API Blog! 🚀',
+        'message': 'Bienvenue sur l\'API Blog! ',
         'version': '1.0.0',
         'documentation': '/api/docs'
     })

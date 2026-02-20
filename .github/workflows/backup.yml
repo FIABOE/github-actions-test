@@ -7,14 +7,14 @@ on:
 
 jobs:
   backup:
-    name: 💾 Sauvegarde des Données
+    name: Sauvegarde des Données
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout du code
+      - name: Checkout du code
         uses: actions/checkout@v4
       
-      - name: 🗓️ Générer le nom du backup
+      - name: Générer le nom du backup
         id: backup_info
         run: |
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -22,18 +22,18 @@ jobs:
           echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
           echo "backup_name=$BACKUP_NAME" >> $GITHUB_OUTPUT
       
-      - name: 💾 Créer le backup
+      - name: Créer le backup
         run: |
           mkdir -p backups/${{ steps.backup_info.outputs.backup_name }}
           cp -r app/ backups/${{ steps.backup_info.outputs.backup_name }}/app/
           echo "Backup created at $(date)" > backups/${{ steps.backup_info.outputs.backup_name }}/backup_info.txt
       
-      - name: 🗜️ Compresser le backup
+      - name: Compresser le backup
         run: |
           cd backups
           tar -czf ${{ steps.backup_info.outputs.backup_name }}.tar.gz ${{ steps.backup_info.outputs.backup_name }}
       
-      - name: 🔐 Calculer le checksum
+      - name: Calculer le checksum
         id: checksum
         run: |
           cd backups
@@ -41,14 +41,14 @@ jobs:
           echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
           echo "$CHECKSUM  ${{ steps.backup_info.outputs.backup_name }}.tar.gz" > ${{ steps.backup_info.outputs.backup_name }}.sha256
       
-      - name: ☁️ Upload vers le stockage
+      - name: Upload vers le stockage
         uses: actions/upload-artifact@v4 # MIS À JOUR
         with:
           name: ${{ steps.backup_info.outputs.backup_name }}
           path: backups/${{ steps.backup_info.outputs.backup_name }}.tar.gz
           retention-days: 30
       
-      - name: 📤 Upload du rapport
+      - name: Upload du rapport
         uses: actions/upload-artifact@v4 # MIS À JOUR
         with:
           name: backup-report-${{ steps.backup_info.outputs.timestamp }}
@@ -56,14 +56,14 @@ jobs:
           retention-days: 90
 
   verify:
-    name: ✅ Vérification du Backup
+    name: Vérification du Backup
     runs-on: ubuntu-latest
     needs: [backup]
     steps:
-      - name: 📥 Télécharger le backup
+      - name: Télécharger le backup
         uses: actions/download-artifact@v4 # MIS À JOUR
         with:
           name: ${{ needs.backup.outputs.backup_name }}
       
-      - name: 🔍 Vérifier le backup
+      - name: Vérifier le backup
         run: ls -lh

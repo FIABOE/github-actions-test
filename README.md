@@ -14,9 +14,9 @@ Ce projet démontre l'utilisation complète de **GitHub Actions** pour automatis
 
 Montrer comment GitHub Actions peut transformer un processus de développement manuel en un pipeline automatisé robuste et fiable.
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
-### 🤖 6 Workflows GitHub Actions Automatisés
+### 6 Workflows GitHub Actions Automatisés
 
 1. **🚀 CI/CD Pipeline** - Déploiement automatique
    - Tests unitaires automatiques
@@ -205,24 +205,6 @@ GitHub Actions automatise l'ensemble du cycle DevOps :
 - **Qualité** : 0 bugs en production depuis 3 mois
 - **Sécurité** : Vulnérabilités détectées avant la production
 
-## 🎬 Démonstration
-
-### Scénario de démo en live
-
-1. **Cassez volontairement l'app** (commentez une ligne de code)
-2. **Push sur GitHub**
-3. **Workflow CI/CD se lance** → Tests échouent
-4. **Déploiement bloqué** → Le code buggé n'atteint jamais la production
-5. **Corrigez le bug**
-6. **Re-push** → Tests passent → Déploiement automatique ✅
-
-### Ce qui impressionne
-
-- L'automatisation complète (0 intervention manuelle)
-- La détection précoce des bugs
-- Les alertes en temps réel
-- Le dashboard visuel
-
 ## 🏗️ Architecture
 
 ```
@@ -255,17 +237,6 @@ Les contributions sont les bienvenues !
 3. Commit vos changements (`git commit -m 'Add AmazingFeature'`)
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
-
-## 📝 License
-
-MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-## 👤 Auteur
-
-**------**
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/data6ai-3b8624235/)
-
-Lien du projet : [https://github.com/FIABOE/devops-monitoring-system](https://github.com/FIABOE/devops-monitoring-system)
 
 ## 🙏 Remerciements
 

@@ -8,7 +8,7 @@ on:
 
 jobs:
   generate-report:
-    name: 📈 Génération du Rapport
+    name:  Génération du Rapport
     runs-on: ubuntu-latest
     
     steps:
@@ -154,28 +154,28 @@ jobs:
           report += f"""
           ## 💡 Faits Marquants
           
-          - 📊 **Activité:** {stats['commits']} commits cette semaine
-          - 🔄 **CI/CD:** {stats['workflowRuns']} exécutions de workflows
-          - 📝 **Collaboration:** {stats['issues']} issues et {stats['pullRequests']} PRs
+          -  **Activité:** {stats['commits']} commits cette semaine
+          -  **CI/CD:** {stats['workflowRuns']} exécutions de workflows
+          - **Collaboration:** {stats['issues']} issues et {stats['pullRequests']} PRs
           
-          ## 🎯 Recommandations
+          ##  Recommandations
           
           """
           
           # Recommandations basées sur les stats
           if stats['failedRuns'] > 0:
-              report += "- ⚠️ Investiguer les workflows échoués pour améliorer la stabilité\n"
+              report += "-  Investiguer les workflows échoués pour améliorer la stabilité\n"
           
           if stats['commits'] == 0:
-              report += "- 💡 Aucun commit cette semaine - projet en pause?\n"
+              report += "-  Aucun commit cette semaine - projet en pause?\n"
           elif stats['commits'] > 50:
-              report += "- 🔥 Beaucoup d'activité cette semaine!\n"
+              report += "-  Beaucoup d'activité cette semaine!\n"
           
           if success_rate < 80:
-              report += "- 🔧 Améliorer la qualité du code pour réduire les échecs\n"
+              report += "-  Améliorer la qualité du code pour réduire les échecs\n"
           
           report += """
-          ## 📅 Prochaine Étape
+          ## Prochaine Étape
           
           - Continuer le développement
           - Surveiller les métriques de performance
@@ -192,14 +192,14 @@ jobs:
           print(report)
           EOF
       
-      - name: 📧 Préparer le contenu de l'email
+      - name: Préparer le contenu de l'email
         run: |
           # Convertir le markdown en texte simple pour l'email
           cat weekly-report.md | sed 's/#//g' | sed 's/\*\*//g' > weekly-report.txt
           
-          echo "📧 Rapport prêt à être envoyé"
+          echo " Rapport prêt à être envoyé"
       
-      - name: 📊 Créer un graphique des tendances
+      - name:  Créer un graphique des tendances
         run: |
           python3 << 'EOF'
           import json
@@ -209,7 +209,7 @@ jobs:
               stats = json.load(f)
           
           # Créer un graphique ASCII simple
-          print("\n📊 GRAPHIQUE DE TENDANCE")
+          print("\n GRAPHIQUE DE TENDANCE")
           print("=" * 50)
           
           metrics = {
@@ -229,7 +229,7 @@ jobs:
           print("=" * 50)
           EOF
       
-      - name: 📤 Upload du rapport
+      - name: Upload du rapport
         uses: actions/upload-artifact@v3
         with:
           name: weekly-report-$(date +"%Y%m%d")
@@ -239,7 +239,7 @@ jobs:
             weekly-stats.json
           retention-days: 90
       
-      - name: 💾 Sauvegarder le rapport dans le repo
+      - name:  Sauvegarder le rapport dans le repo
         run: |
           # Créer un dossier pour les rapports si il n'existe pas
           mkdir -p reports
@@ -247,42 +247,42 @@ jobs:
           # Copier le rapport avec la date
           cp weekly-report.md reports/weekly-report-$(date +"%Y%m%d").md
           
-          echo "📁 Rapport sauvegardé dans reports/"
+          echo " Rapport sauvegardé dans reports/"
       
-      - name: 📊 Afficher le résumé
+      - name:  Afficher le résumé
         run: |
           echo "================================"
-          echo "📊 WEEKLY REPORT GENERATED"
+          echo "WEEKLY REPORT GENERATED"
           echo "================================"
           cat weekly-report.txt
           echo "================================"
           echo ""
-          echo "✅ Rapport généré avec succès!"
-          echo "📧 Prêt à être envoyé par email"
+          echo " Rapport généré avec succès!"
+          echo " Prêt à être envoyé par email"
       
       # Dans un vrai projet, vous enverriez l'email ici
       # Voir la configuration d'envoi d'email séparée
   
   # ==================== RÉSUMÉ ====================
   summary:
-    name: 📋 Résumé
+    name:  Résumé
     runs-on: ubuntu-latest
     needs: [generate-report]
     if: always()
     
     steps:
-      - name: 📋 Afficher le résumé
+      - name:  Afficher le résumé
         run: |
           echo "================================"
-          echo "📊 WEEKLY REPORT SUMMARY"
+          echo " WEEKLY REPORT SUMMARY"
           echo "================================"
           echo "Status: ${{ needs.generate-report.result }}"
           echo "Date: $(date)"
           echo "================================"
           
           if [ "${{ needs.generate-report.result }}" = "success" ]; then
-            echo "✅ Rapport hebdomadaire généré avec succès"
-            echo "📧 Le rapport est disponible dans les artifacts"
+            echo " Rapport hebdomadaire généré avec succès"
+            echo " Le rapport est disponible dans les artifacts"
           else
-            echo "❌ Échec de la génération du rapport"
+            echo " Échec de la génération du rapport"
           fi

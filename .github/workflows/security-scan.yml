@@ -1,4 +1,4 @@
-name: 🔒 Security Scan
+name: Security Scan
 
 # S'exécute quotidiennement à 2h du matin
 on:
@@ -119,56 +119,56 @@ jobs:
               # Afficher les problèmes les plus graves
               high_issues = [r for r in results if r.get('issue_severity') == 'HIGH']
               if high_issues:
-                  print("\n⚠️ HIGH SEVERITY ISSUES:")
+                  print("\n HIGH SEVERITY ISSUES:")
                   for issue in high_issues[:3]:
-                      print(f"\n  📁 File: {issue.get('filename', 'Unknown')}")
-                      print(f"  📍 Line: {issue.get('line_number', '?')}")
-                      print(f"  ⚠️ Issue: {issue.get('issue_text', 'No description')}")
+                      print(f"\n File: {issue.get('filename', 'Unknown')}")
+                      print(f"  Line: {issue.get('line_number', '?')}")
+                      print(f"  Issue: {issue.get('issue_text', 'No description')}")
               else:
-                  print("\n✅ No high severity issues found!")
+                  print("\n No high severity issues found!")
               
               print("="*50)
           except Exception as e:
-              print(f"ℹ️ Analyse du rapport: {str(e)}")
+              print(f" Analyse du rapport: {str(e)}")
           EOF
           fi
       
       # ==================== SCAN DES SECRETS ====================
-      - name: 🔐 Scan des secrets et tokens
+      - name:  Scan des secrets et tokens
         run: |
-          echo "🔐 Recherche de secrets accidentellement commités..."
+          echo " Recherche de secrets accidentellement commités..."
           
           # Patterns courants de secrets
           echo "Recherche de patterns suspects..."
           
           # API Keys
-          grep -r -n "api[_-]?key.*=.*['\"][a-zA-Z0-9]{20,}['\"]" app/ || echo "✅ Pas d'API keys détectées"
+          grep -r -n "api[_-]?key.*=.*['\"][a-zA-Z0-9]{20,}['\"]" app/ || echo " Pas d'API keys détectées"
           
           # Passwords
-          grep -r -n "password.*=.*['\"][^'\"]{8,}['\"]" app/ || echo "✅ Pas de mots de passe en dur"
+          grep -r -n "password.*=.*['\"][^'\"]{8,}['\"]" app/ || echo " Pas de mots de passe en dur"
           
           # AWS Keys
-          grep -r -n "AKIA[0-9A-Z]{16}" app/ || echo "✅ Pas de clés AWS détectées"
+          grep -r -n "AKIA[0-9A-Z]{16}" app/ || echo " Pas de clés AWS détectées"
           
-          echo "✅ Scan des secrets terminé"
+          echo " Scan des secrets terminé"
       
       # ==================== GÉNÉRER LE RAPPORT ====================
-      - name: 📊 Générer le rapport de sécurité
+      - name:  Générer le rapport de sécurité
         if: always()
         run: |
           echo "================================" > security-summary.txt
-          echo "🔒 SECURITY SCAN SUMMARY" >> security-summary.txt
+          echo " SECURITY SCAN SUMMARY" >> security-summary.txt
           echo "================================" >> security-summary.txt
-          echo "🕒 Timestamp: $(date)" >> security-summary.txt
+          echo " Timestamp: $(date)" >> security-summary.txt
           echo "" >> security-summary.txt
-          echo "📊 Results:" >> security-summary.txt
+          echo " Results:" >> security-summary.txt
           echo "  - Safety Check: ${{ steps.safety_check.outcome }}" >> security-summary.txt
           echo "  - Bandit Check: ${{ steps.bandit_check.outcome }}" >> security-summary.txt
           echo "================================" >> security-summary.txt
           
           cat security-summary.txt
       
-      - name: 📤 Upload des rapports
+      - name:  Upload des rapports
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -180,14 +180,14 @@ jobs:
           retention-days: 30
       
       # ==================== ALERTE SI PROBLÈMES CRITIQUES ====================
-      - name: 🚨 Créer un issue si vulnérabilités critiques
+      - name: Créer un issue si vulnérabilités critiques
         if: failure()
         uses: actions/github-script@v7
         with:
           script: |
-            const title = '🔒 Security Vulnerabilities Detected';
+            const title = ' Security Vulnerabilities Detected';
             const body = `
-            ## 🔒 Alerte Sécurité
+            ##  Alerte Sécurité
             
             **Timestamp:** ${new Date().toISOString()}
             **Workflow:** ${context.workflow}
@@ -222,29 +222,29 @@ jobs:
                 body: body,
                 labels: ['security', 'high-priority', 'automated']
               });
-              console.log('✅ Security issue created');
+              console.log(' Security issue created');
             } else {
-              console.log('ℹ️ Security issue already exists');
+              console.log('ℹ Security issue already exists');
             }
 
   summary:
-    name: 📊 Résumé Sécurité
+    name:  Résumé Sécurité
     runs-on: ubuntu-latest
     needs: [security-scan]
     if: always()
     
     steps:
-      - name: 📊 Afficher le résumé
+      - name:  Afficher le résumé
         run: |
           echo "================================"
-          echo "🔒 SECURITY SCAN COMPLETE"
+          echo " SECURITY SCAN COMPLETE"
           echo "================================"
           echo "Status: ${{ needs.security-scan.result }}"
           echo "Timestamp: $(date)"
           echo "================================"
           
           if [ "${{ needs.security-scan.result }}" = "success" ]; then
-            echo "✅ Aucun problème critique détecté"
+            echo " Aucun problème critique détecté"
           else
-            echo "⚠️ Des problèmes de sécurité nécessitent votre attention"
+            echo " Des problèmes de sécurité nécessitent votre attention"
           fi
