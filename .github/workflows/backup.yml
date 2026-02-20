@@ -1,4 +1,4 @@
-name: 💾 Automated Backup
+name: Automated Backup
 
 on:
   schedule:

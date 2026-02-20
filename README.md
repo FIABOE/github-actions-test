@@ -25,7 +25,7 @@ Montrer comment GitHub Actions peut transformer un processus de développement m
    - Déploiement sur succès
 
 2.  **🏥 Health Check** - Surveillance quotidienne 
-   - Vérification automatisée chaque jour à midi.
+   - Vérification automatisée chaque jour.
    - Ping du endpoint /health pour vérifier la disponibilité
    - Rapport d'état généré directement dans GitHub Actions.
    - Possibilité de déclenchement manuel (Workflow Dispatch)

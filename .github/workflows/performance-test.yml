@@ -1,7 +1,12 @@
 name:  Performance Testing
 
 on:
-  workflow_dispatch: # Permet de le lancer à la main quand tu veux
+  workflow_dispatch: # Permet de le lancer à la main 
+
+
+permissions:
+  contents: write
+  issues: write
 
 jobs:
   performance-test:

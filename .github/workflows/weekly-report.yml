@@ -1,4 +1,4 @@
-name: 📊 Weekly Report
+name: Weekly Report
 
 # S'exécute tous les lundis à 9h
 on:
