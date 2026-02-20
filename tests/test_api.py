@@ -25,7 +25,7 @@ def client():
 def test_home(client):
     """Test de la page d'accueil"""
     response = client.get('/')
-    assert response.status_code == 200
+    assert response.status_code == 999
     data = response.get_json()
     assert data['status'] == 'success'
     assert 'version' in data

@@ -10,39 +10,39 @@ on:
 
 jobs:
   security-scan:
-    name: 🔍 Analyse de Sécurité
+    name:  Analyse de Sécurité
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout du code
+      - name:  Checkout du code
         uses: actions/checkout@v4
       
-      - name: 🐍 Configuration Python
+      - name:  Configuration Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
-      - name: 📦 Installation des dépendances
+      - name:  Installation des dépendances
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install safety bandit
       
       # ==================== SCAN DES DÉPENDANCES ====================
-      - name: 🔍 Scan des vulnérabilités (Safety)
+      - name:  Scan des vulnérabilités (Safety)
         id: safety_check
         continue-on-error: true
         run: |
-          echo "🔍 Vérification des vulnérabilités dans les dépendances..."
+          echo " Vérification des vulnérabilités dans les dépendances..."
           safety check --json > safety-report.json || true
           
           # Afficher le rapport
           if [ -f safety-report.json ]; then
-            echo "📊 Rapport Safety:"
+            echo "Rapport Safety:"
             cat safety-report.json | python3 -m json.tool || cat safety-report.json
           fi
       
-      - name: 📊 Analyser le rapport Safety
+      - name:  Analyser le rapport Safety
         if: always()
         run: |
           if [ -f safety-report.json ]; then
@@ -54,34 +54,34 @@ jobs:
                   data = json.load(f)
               
               if isinstance(data, list) and len(data) > 0:
-                  print(f"⚠️ {len(data)} vulnérabilité(s) détectée(s)!")
+                  print(f" {len(data)} vulnérabilité(s) détectée(s)!")
                   for vuln in data[:5]:  # Afficher max 5
-                      print(f"\n📦 Package: {vuln.get('package', 'Unknown')}")
-                      print(f"🔢 Version: {vuln.get('installed_version', 'Unknown')}")
-                      print(f"⚠️ Severity: {vuln.get('severity', 'Unknown')}")
-                      print(f"📝 {vuln.get('advisory', 'No description')[:100]}...")
+                      print(f"\n Package: {vuln.get('package', 'Unknown')}")
+                      print(f"Version: {vuln.get('installed_version', 'Unknown')}")
+                      print(f" Severity: {vuln.get('severity', 'Unknown')}")
+                      print(f" {vuln.get('advisory', 'No description')[:100]}...")
               else:
-                  print("✅ Aucune vulnérabilité détectée dans les dépendances!")
+                  print(" Aucune vulnérabilité détectée dans les dépendances!")
           except Exception as e:
-              print(f"ℹ️ Analyse du rapport: {str(e)}")
+              print(f"ℹ Analyse du rapport: {str(e)}")
           EOF
           fi
       
       # ==================== ANALYSE STATIQUE DU CODE ====================
-      - name: 🔍 Analyse statique du code (Bandit)
+      - name:  Analyse statique du code (Bandit)
         id: bandit_check
         continue-on-error: true
         run: |
-          echo "🔍 Analyse de sécurité du code Python..."
+          echo " Analyse de sécurité du code Python..."
           bandit -r app/ -f json -o bandit-report.json || true
           
           # Afficher le résumé
           if [ -f bandit-report.json ]; then
-            echo "📊 Rapport Bandit:"
+            echo " Rapport Bandit:"
             cat bandit-report.json | python3 -m json.tool | head -n 50
           fi
       
-      - name: 📊 Analyser le rapport Bandit
+      - name:  Analyser le rapport Bandit
         if: always()
         run: |
           if [ -f bandit-report.json ]; then
@@ -96,13 +96,13 @@ jobs:
               results = data.get('results', [])
               
               print("="*50)
-              print("🔒 BANDIT SECURITY REPORT")
+              print(" BANDIT SECURITY REPORT")
               print("="*50)
               
               # Statistiques globales
               total_loc = sum(m.get('loc', 0) for m in metrics.values())
-              print(f"📝 Lines of code analyzed: {total_loc}")
-              print(f"🔍 Issues found: {len(results)}")
+              print(f" Lines of code analyzed: {total_loc}")
+              print(f" Issues found: {len(results)}")
               
               # Compter par sévérité
               severity_counts = {}

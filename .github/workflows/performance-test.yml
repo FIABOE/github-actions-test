@@ -5,15 +5,15 @@ on:
 
 jobs:
   performance-test:
-    name: 📊 Test de Performance
+    name:  Test de Performance
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout du code
+      - name:  Checkout du code
         uses: actions/checkout@v4
       
-      - name: 🐍 Configuration Python
-        uses: actions/setup-python@v5 # MIS À JOUR de v4 à v5
+      - name:  Configuration Python
+        uses: actions/setup-python@v5 
         with:
           python-version: '3.11'
       

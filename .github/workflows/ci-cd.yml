@@ -1,17 +1,17 @@
 name: 🚀 CI/CD Pipeline
 
-on:
+on:     #Le déclencheur
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
-jobs:
+jobs:                      #Les jobs à exécuter
   test:
-    name: 🧪 Tests Unitaires
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout du code
+    name: Tests Unitaires
+    runs-on: ubuntu-latest     #le Runner
+    steps:                            #Les étapes à exécuter dans ce job
+      - name: Checkout du code
         uses: actions/checkout@v4
       
       - name: 🐍 Configuration Python 3.11
