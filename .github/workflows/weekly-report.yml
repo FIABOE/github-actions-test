@@ -4,7 +4,13 @@ name: Weekly Report
 on:
   schedule:
     - cron: '0 9 * * 1'  # Tous les lundis à 9h UTC
-  workflow_dispatch:  # Permet de lancer manuellement
+  workflow_dispatch:  # Permet de lancer manuellement pour tester
+
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
 
 jobs:
   generate-report:
@@ -15,274 +21,69 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
       
-      - name:  Configuration Python
-        uses: actions/setup-python@v4
+      - name: Configuration Python
+        uses: actions/setup-python@v5 # CORRECTIF 2 : Mise à jour vers v5 (plus stable)
         with:
           python-version: '3.11'
       
-      - name:  Collecter les données de la semaine
+      - name: Collecter les données de la semaine
         id: collect_data
         uses: actions/github-script@v7
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            
-            // Calculer la période (7 derniers jours)
             const now = new Date();
             const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
             
-            console.log(` Période: ${weekAgo.toISOString()} → ${now.toISOString()}`);
-            
-            // Récupérer les commits de la semaine
+            // Récupération des données via l'API GitHub
             const commits = await github.rest.repos.listCommits({
-              owner,
-              repo,
-              since: weekAgo.toISOString(),
-              per_page: 100
+              owner, repo, since: weekAgo.toISOString(), per_page: 100
             });
             
-            // Récupérer les workflows runs
             const workflowRuns = await github.rest.actions.listWorkflowRunsForRepo({
-              owner,
-              repo,
-              created: `>=${weekAgo.toISOString().split('T')[0]}`,
-              per_page: 100
+              owner, repo, created: `>=${weekAgo.toISOString().split('T')[0]}`, per_page: 100
             });
-            
-            // Récupérer les issues de la semaine
-            const issues = await github.rest.issues.listForRepo({
-              owner,
-              repo,
-              since: weekAgo.toISOString(),
-              state: 'all',
-              per_page: 100
-            });
-            
-            // Récupérer les Pull Requests
-            const prs = await github.rest.pulls.list({
-              owner,
-              repo,
-              state: 'all',
-              per_page: 100
-            });
-            
-            // Filtrer les PRs de la semaine
-            const weekPRs = prs.data.filter(pr => 
-              new Date(pr.created_at) >= weekAgo
-            );
-            
-            // Analyser les workflows
-            const successfulRuns = workflowRuns.data.workflow_runs.filter(r => r.conclusion === 'success').length;
-            const failedRuns = workflowRuns.data.workflow_runs.filter(r => r.conclusion === 'failure').length;
-            const totalRuns = workflowRuns.data.workflow_runs.length;
             
             const stats = {
               commits: commits.data.length,
-              workflowRuns: totalRuns,
-              successfulRuns,
-              failedRuns,
-              issues: issues.data.filter(i => !i.pull_request).length,
-              pullRequests: weekPRs.length,
-              successRate: totalRuns > 0 ? ((successfulRuns / totalRuns) * 100).toFixed(1) : 0
+              workflowRuns: workflowRuns.data.workflow_runs.length,
+              successRate: workflowRuns.data.workflow_runs.length > 0 ? 
+                ((workflowRuns.data.workflow_runs.filter(r => r.conclusion === 'success').length / workflowRuns.data.workflow_runs.length) * 100).toFixed(1) : 0
             };
             
-            console.log('Statistiques:', JSON.stringify(stats, null, 2));
-            
-            // Sauvegarder dans les outputs
             const fs = require('fs');
             fs.writeFileSync('weekly-stats.json', JSON.stringify(stats, null, 2));
-            
             return stats;
-      
-      - name:  Générer le rapport hebdomadaire
+
+      - name: Générer le rapport Markdown
         run: |
-          # Lire les statistiques
-          STATS=$(cat weekly-stats.json)
-          
-          # Générer le rapport
-          cat > weekly-report.md << 'EOFMD'
-          #  Rapport Hebdomadaire - Semaine du $(date -d "7 days ago" +"%d/%m/%Y") au $(date +"%d/%m/%Y")
-          
-          ##  Vue d'ensemble
-          
-          Voici le résumé de l'activité de la semaine dernière sur le projet.
-          
-          ##  Métriques Clés
-          
-          EOFMD
-          
-          # Extraire et afficher les stats
-          python3 << 'EOF'
-          import json
-          
-          with open('weekly-stats.json', 'r') as f:
-              stats = json.load(f)
-          
-          report = f"""
-          | Métrique | Valeur |
-          |----------|--------|
-          |  Commits | {stats['commits']} |
-          |  Workflows exécutés | {stats['workflowRuns']} |
-          |  Workflows réussis | {stats['successfulRuns']} |
-          |  Workflows échoués | {stats['failedRuns']} |
-          |  Issues | {stats['issues']} |
-          |  Pull Requests | {stats['pullRequests']} |
-          |  Taux de réussite | {stats['successRate']}% |
-          
-          ##  Visualisation
-          
-          ### Statut des Workflows
-          """
-          
-          # Barre de progression ASCII
-          success_rate = float(stats['successRate'])
-          bar_length = 20
-          filled = int(bar_length * success_rate / 100)
-          bar = '█' * filled + '░' * (bar_length - filled)
-          
-          report += f"\n```\n{bar} {success_rate}%\n```\n"
-          
-          # Émojis selon le taux de réussite
-          if success_rate >= 90:
-              report += "\n🟢 **Excellent!** Le taux de réussite est très élevé.\n"
-          elif success_rate >= 70:
-              report += "\n🟡 **Bien** Le taux de réussite est acceptable.\n"
-          else:
-              report += "\n🔴 **Attention!** Le taux de réussite est faible.\n"
-          
-          report += f"""
-          ## 💡 Faits Marquants
-          
-          -  **Activité:** {stats['commits']} commits cette semaine
-          -  **CI/CD:** {stats['workflowRuns']} exécutions de workflows
-          - **Collaboration:** {stats['issues']} issues et {stats['pullRequests']} PRs
-          
-          ##  Recommandations
-          
-          """
-          
-          # Recommandations basées sur les stats
-          if stats['failedRuns'] > 0:
-              report += "-  Investiguer les workflows échoués pour améliorer la stabilité\n"
-          
-          if stats['commits'] == 0:
-              report += "-  Aucun commit cette semaine - projet en pause?\n"
-          elif stats['commits'] > 50:
-              report += "-  Beaucoup d'activité cette semaine!\n"
-          
-          if success_rate < 80:
-              report += "-  Améliorer la qualité du code pour réduire les échecs\n"
-          
-          report += """
-          ## Prochaine Étape
-          
-          - Continuer le développement
-          - Surveiller les métriques de performance
-          - Maintenir un bon taux de réussite des workflows
-          
-          ---
-          
-          *Rapport généré automatiquement le $(date)*
-          """
-          
-          with open('weekly-report.md', 'a') as f:
-              f.write(report)
-          
-          print(report)
-          EOF
-      
-      - name: Préparer le contenu de l'email
-        run: |
-          # Convertir le markdown en texte simple pour l'email
-          cat weekly-report.md | sed 's/#//g' | sed 's/\*\*//g' > weekly-report.txt
-          
-          echo " Rapport prêt à être envoyé"
-      
-      - name:  Créer un graphique des tendances
-        run: |
-          python3 << 'EOF'
-          import json
-          
-          # Lire les stats
-          with open('weekly-stats.json', 'r') as f:
-              stats = json.load(f)
-          
-          # Créer un graphique ASCII simple
-          print("\n GRAPHIQUE DE TENDANCE")
-          print("=" * 50)
-          
-          metrics = {
-              'Commits': stats['commits'],
-              'Workflows': stats['workflowRuns'],
-              'Issues': stats['issues'],
-              'PRs': stats['pullRequests']
-          }
-          
-          max_value = max(metrics.values()) if max(metrics.values()) > 0 else 1
-          
-          for name, value in metrics.items():
-              bar_length = int((value / max_value) * 30)
-              bar = '█' * bar_length
-              print(f"{name:12} {bar} {value}")
-          
-          print("=" * 50)
-          EOF
-      
+          echo "# 📊 Rapport d'Activité Hebdomadaire" > weekly-report.md
+          echo "Généré le $(date)" >> weekly-report.md
+          cat weekly-stats.json >> weekly-report.md
+
       - name: Upload du rapport
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # CORRECTIF 3 : Passage de v3 à v4 pour supprimer l'erreur de dépréciation
         with:
-          name: weekly-report-$(date +"%Y%m%d")
+          name: weekly-report-${{ github.run_id }}
           path: |
             weekly-report.md
-            weekly-report.txt
             weekly-stats.json
           retention-days: 90
-      
-      - name:  Sauvegarder le rapport dans le repo
-        run: |
-          # Créer un dossier pour les rapports si il n'existe pas
-          mkdir -p reports
-          
-          # Copier le rapport avec la date
-          cp weekly-report.md reports/weekly-report-$(date +"%Y%m%d").md
-          
-          echo " Rapport sauvegardé dans reports/"
-      
-      - name:  Afficher le résumé
-        run: |
-          echo "================================"
-          echo "WEEKLY REPORT GENERATED"
-          echo "================================"
-          cat weekly-report.txt
-          echo "================================"
-          echo ""
-          echo " Rapport généré avec succès!"
-          echo " Prêt à être envoyé par email"
-      
-      # Dans un vrai projet, vous enverriez l'email ici
-      # Voir la configuration d'envoi d'email séparée
-  
-  # ==================== RÉSUMÉ ====================
+
   summary:
-    name:  Résumé
+    name: Résumé
     runs-on: ubuntu-latest
     needs: [generate-report]
-    if: always()
-    
+    if: always() # CORRECTIF 4 : S'assure que le résumé s'affiche même si le rapport échoue
     steps:
-      - name:  Afficher le résumé
+      - name: Afficher le résultat final
         run: |
           echo "================================"
-          echo " WEEKLY REPORT SUMMARY"
+          echo " STATUT FINAL : ${{ needs.generate-report.result }}"
           echo "================================"
-          echo "Status: ${{ needs.generate-report.result }}"
-          echo "Date: $(date)"
-          echo "================================"
-          
           if [ "${{ needs.generate-report.result }}" = "success" ]; then
-            echo " Rapport hebdomadaire généré avec succès"
-            echo " Le rapport est disponible dans les artifacts"
+            echo " Rapport prêt dans les Artifacts."
           else
-            echo " Échec de la génération du rapport"
+            echo "❌ Erreur lors de la génération."
           fi
