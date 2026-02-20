@@ -55,7 +55,7 @@ jobs:
         run: |
           echo "Status de la génération : ${{ needs.generate-report.result }}"
           if [ "${{ needs.generate-report.result }}" = "success" ]; then
-            echo "✅ Tout est parfait."
+            echo " Tout est parfait."
           else
-            echo "❌ Problème détecté dans le job précédent."
+            echo " Problème détecté dans le job précédent."
           fi
